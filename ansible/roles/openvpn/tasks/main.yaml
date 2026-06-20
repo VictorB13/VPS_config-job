@@ -1,22 +1,4 @@
 ---
-- name: Download and Run Docker installation script
-  ansible.builtin.shell: |
-    curl -fsSL https://get.docker.com -o get-docker.sh
-    sh get-docker.sh
-  args:
-    creates: /usr/bin/docker 
-
-- name: Ensure Docker service is running
-  ansible.builtin.service:
-    name: docker
-    state: started
-    enabled: yes
-
-- name: Install Docker SDK for Python (required for Ansible Docker modules)
-  ansible.builtin.pip:
-    name: docker
-    state: present
-
 - name: Create OpenVPN configuration directory
   ansible.builtin.file:
     path: /etc/openvpn_data
