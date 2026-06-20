@@ -1,0 +1,44 @@
+---
+- name: Change the default SSH port in sshd_config
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?Port\s+\d+'
+    line: "Port {{ ssh_port }}"
+
+- name: Restart the sshd service to apply the new port config
+  ansible.builtin.service:
+    name: sshd
+    state: restarted
+
+- name: Config fail2ban jail.local
+  ansible.builtin.service: #enable fail2ban service
+    name: fail2ban
+    state: started
+    enabled: yes
+
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.local
+    content: |
+      [sshd]
+      enabled = true 
+      port = {{ ssh_port }} 
+      filter = sshd 
+      logpath = /var/log/auth.log 
+      maxretry = 5
+      bantime = 3600
+      findtime = 600
+
+- name: Restart fail2ban to apply the new config
+  ansible.builtin.service:
+    name: fail2ban
+    state: restarted 
+  
+- name: Copy "iptables_setup.sh" script to the Server
+  ansible.builtin.copy:
+    src: ../../scripts/iptables_setup.sh #from where to copy the script
+    dest: /tmp/iptables_setup.sh #where to put the script in the server
+    mode: '0755'
+
+- name: Run "iptables_setup.sh" script
+  ansible.builtin.command: /tmp/iptables_setup.sh
+  become: true

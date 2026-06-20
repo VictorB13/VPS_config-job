@@ -1,0 +1,21 @@
+---
+- name: VPS Config
+  hosts: all # run this pb on all hosts
+  become: true # get root priviliges 
+
+  environment: 
+    ANSIBLE_FORCE_COLOR: "true" #AnsiColor for jenkins to paint the ansible logs 
+
+ # executing the roles 
+  roles:
+    - role: common
+      tags: [common, basic]
+
+    - role: hardening
+      tags: [hardening, security]
+    
+    - role: maintenance
+      tags: [maintenance, cronjob]
+    
+    - role: openvpn
+      tags: [openvpn, vpn]

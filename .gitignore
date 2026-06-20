@@ -1,0 +1,21 @@
+# Jenkins data (volume)
+jenkins/jenkins_home
+
+# Vault data (volume)
+jenkins/vault
+
+# Terraform
+terraform/.terraform 
+terraform/.terraform.lock.hcl 
+terraform.tfvars
+terraform/*.tfstate
+terraform/*.tfstate.backup
+
+# Hosts file
+ansible/inventory.ini
+
+# Free text
+t.txt
+
+# MAC files
+.DS_Store

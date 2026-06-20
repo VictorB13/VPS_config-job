@@ -1,0 +1,29 @@
+---
+- name: Create OpenVPN configuration directory
+  ansible.builtin.file:
+    path: /etc/openvpn_data
+    state: directory
+    mode: '0700'
+
+- name: Run OpenVPN Container
+  community.docker.docker_container:
+    name: openvpn
+    image: kylemanna/openvpn:latest
+    state: started 
+    restart_policy: always
+    ports:
+      - "1194:1194/udp"
+    volumes:
+      - /etc/openvpn_data:/etc/openvpn
+    capabilities:
+      - NET_ADMIN 
+  
+- name: Initialize OpenVPN configuration inside the container
+  ansible.builtin.command: docker exec openvpn ovpn_genconfig -u udp://{{ anible_host }}:1194
+  args:
+    creates: /etc/openvpn_data/openvpn.conf
+
+- name: Initialize PKI CA
+  ansible.builtin.command: docker exec -e EASYRSA_BATCH=1 openvpn ovpn_initpki nopass
+  args:
+    creates: /etc/openvpn_data/pki/ca.crt

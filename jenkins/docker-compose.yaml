@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  # Vault server
+  vault:
+    image: hashicorp/vault:latest
+    container_name: vault
+    ports:
+      - "8200:8200"
+    volumes:
+      - ./vault/config:/vault/config
+      - ./vault/data:/vault/data
+      - ./vault/logs:/vault/logs
+    environment:
+      VAULT_REDIRECT_ADDR: "http://127.0.0.1:8200"
+      VAULT_LOCAL_CONFIG: >-
+        {"listener": {"tcp": {"address": "0.0.0.0:8200", "tls_disable": 1}}, "storage": {"file": {"path": "/vault/data"}}, "ui": true}
+    cap_add:
+      - IPC_LOCK
+    restart: always
+    command: server
+
+  # Jenkins server
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jenkins
+    ports: 
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - ./jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    user: root
+    restart: always

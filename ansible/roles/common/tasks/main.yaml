@@ -1,0 +1,47 @@
+---
+- name: Update apt cache
+  apt: # Use the apt module to update the package cache
+    update_cache: yes
+
+- name: Install required packages
+  apt:
+    name:
+      - curl
+      - wget
+      - vim
+      - nano
+      - git
+      - unzip
+      - jq
+      - net-tools
+      - tcpdump
+      - traceroute
+      - htop
+      - rsync
+      - tar
+      - python3
+      - docker
+      - fail2ban
+      - iptables-persistent
+      - ntp
+    state: present # Ensure the packages are installed
+
+- name: Export usr/sbin and /sbin in .bashrc path
+  ansible.builtin.lineinfile:
+    path: ~/.bashrc
+    regexp: ':/usr/sbin:/sbin'
+    line: 'export PATH=$PATH:/usr/sbin:/sbin'
+    state: present
+
+- name: Configure user .bashrc history to include date & timestamp
+  ansible.builtin.lineinfile:
+    path: ~/.bashrc
+    regexp: '^export HISTTIMEFORMAT='
+    line: 'export HISTTIMEFORMAT="%F %T "'
+    state: present
+
+- name: Enable & Start NTP service
+  ansible.builtin.service:
+    name: ntp
+    state: started
+    enabled: yes

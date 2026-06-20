@@ -1,0 +1,15 @@
+---
+- name: Copy maintencance script to the remote server 
+  ansible.builtin.copy:
+    src: ../../scripts/maintenance.sh
+    dest: /usr/local/bin/maintenance.sh
+    mode: '0755' # Set the script permissions to be executable
+    owner: root
+    group: root
+
+- name: Create Cronjob to run weekly
+  ansible.builtin.cron:
+    name: "Weekly Maintencance Script"
+    special_time: weekly
+    job: "/usr/local/bin/maintenance.sh > /var/log/maintenance.log 2>&1" # Redirect output to a log file
+    user: root # Run the cron job as root to ensure it has the necessary permissions
