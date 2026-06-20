@@ -1,13 +1,13 @@
 ---
-- name: Flush all existing iptables rules to prevent connection blocks
-  ansible.builtin.iptables:
-    flush: yes
-
 - name: Set default iptables policies to ACCEPT during configuration
   ansible.builtin.iptables:
     policy: ACCEPT
     chain: "{{ item }}"
   loop: [ 'INPUT', 'OUTPUT', 'FORWARD' ]
+ 
+- name: Flush all existing iptables rules to prevent connection blocks
+  ansible.builtin.iptables:
+    flush: yes
 
 - name: Update apt cache
   apt: # Use the apt module to update the package cache
