@@ -35,7 +35,7 @@ pipeline {
                     echo "Input Validation Passed. Fetching secrets..."
 
                     def secretsJson = sh(
-                        script: "curl -s -H 'X-Vault-Token: ${rawToken}' ${VAULT_ADDR}/v1/secret/data/production/servers/${params.SERVER_NAME}",
+                        script: "curl -s -H 'X-Vault-Token: ${rawToken}' ${VAULT_ADDR}/v1/secret/data/Production/servers/${params.SERVER_NAME}",
                         returnStdout: true
                     ).trim()
 
@@ -87,7 +87,7 @@ pipeline {
                         -H "X-Vault-Token: ${rawToken}" \
                         -H "Content-Type: application/json" \
                         -d '{"data": {"server_ip": "${env.SERVER_IP}", "ssh_port": "2222", "server_password": "${env.SERVER_PASS}"}}' \
-                        ${VAULT_ADDR}/v1/secret/data/production/servers/${params.SERVER_NAME}
+                        ${VAULT_ADDR}/v1/secret/data/Production/servers/${params.SERVER_NAME}
                     """
                     echo "Vault has been updated"
                 }
