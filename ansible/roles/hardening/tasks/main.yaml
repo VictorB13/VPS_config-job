@@ -41,5 +41,5 @@
     mode: '0755'
 
 - name: Run "iptables_setup.sh" script
-  ansible.builtin.command: /tmp/iptables_setup.sh
+  ansible.builtin.command: /tmp/iptables_setup.sh "{{ ansible_port }}"
   become: true
