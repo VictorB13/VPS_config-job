@@ -17,7 +17,7 @@ pipeline {
 
     environment {
         VAULT_ADDR = 'http://vault:8200'
-        VAULT_TOKEN = "${params.VAULT_PERSONAL_TOKEN}"
+        VAULT_TOKEN = params.VAULT_PERSONAL_TOKEN
     }
 
     stages {
@@ -25,21 +25,23 @@ pipeline {
             steps {
                 script {
                     if (params.SERVER_NAME == null || params.SERVER_NAME.trim() == '') {
-                        error "You did not provide any input fot the server name. ABORTING..."
+                        error "You did not provide any input for the server name. ABORTING..."
                     }
 
-                    if (params.VAULT_PERSONAL_TOKEN == null || params.VAULT_PERSONAL_TOKEN.trim() == '') {
+                    def rawToken = params.VAULT_PERSONAL_TOKEN.getPlainText()
+                    if (rawToken == null || rawToken.trim() == '') {
                         error "No token was provided, permission denied"
                     }
 
-                    echo "Input Validation & Secrets Fetching Passed"
+                    echo "Input Validation Passed. Fetching secrets..."
 
                     def secretsJson = sh(
-                        script: "curl -s -H 'X-Vault-Token: ${VAULT_TOKEN}' ${VAULT_ADDR}/v1/secret/data/production/servers/${params.SERVER_NAME}",
+                        script: "curl -s -H 'X-Vault-Token: ${rawToken}' ${VAULT_ADDR}/v1/secret/data/production/servers/${params.SERVER_NAME}",
                         returnStdout: true
                     ).trim()
 
-                    def props = readJSON text: secretsJson
+                    def props = new groovy.json.JsonSlurper().parseText(secretsJson)
+                    
                     env.SERVER_IP = props.data.data.server_ip
                     env.SERVER_PORT = props.data.data.ssh_port
                     env.SERVER_PASS = props.data.data.server_password
@@ -79,10 +81,11 @@ pipeline {
         stage('Update Vault Port') {
             steps {
                 script {
+                    def rawToken = params.VAULT_PERSONAL_TOKEN.getPlainText()
                     echo "Updating the new port (2222) in Vault..."
                     sh """
                     curl -s -X POST \
-                        -H "X-Vault-Token: ${VAULT_TOKEN}" \
+                        -H "X-Vault-Token: ${rawToken}" \
                         -H "Content-Type: application/json" \
                         -d '{"data": {"server_ip": "${env.SERVER_IP}", "ssh_port": "2222", "server_password": "${env.SERVER_PASS}"}}' \
                         ${VAULT_ADDR}/v1/secret/data/production/servers/${params.SERVER_NAME}
