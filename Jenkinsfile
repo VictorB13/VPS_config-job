@@ -17,7 +17,6 @@ pipeline {
 
     environment {
         VAULT_ADDR = 'http://vault:8200'
-        VAULT_TOKEN = params.VAULT_PERSONAL_TOKEN
     }
 
     stages {
