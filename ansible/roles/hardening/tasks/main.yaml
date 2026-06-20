@@ -36,7 +36,7 @@
   
 - name: Copy "iptables_setup.sh" script to the Server
   ansible.builtin.copy:
-    src: ../../scripts/iptables_setup.sh #from where to copy the script
+    src: "{{ playbook_dir }}/../scripts/iptables_setup.sh" #from where to copy the script
     dest: /tmp/iptables_setup.sh #where to put the script in the server
     mode: '0755'
 

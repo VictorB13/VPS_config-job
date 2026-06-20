@@ -1,7 +1,7 @@
 ---
 - name: Copy maintencance script to the remote server 
   ansible.builtin.copy:
-    src: ../../scripts/maintenance.sh
+    src: "{{ playbook_dir }}/../scripts/maintenance.sh"
     dest: /usr/local/bin/maintenance.sh
     mode: '0755' # Set the script permissions to be executable
     owner: root
