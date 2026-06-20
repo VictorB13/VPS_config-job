@@ -10,12 +10,13 @@
     name: sshd
     state: restarted
 
-- name: Config fail2ban jail.local
+- name: Enable Fail2ban service
   ansible.builtin.service: #enable fail2ban service
     name: fail2ban
     state: started
     enabled: yes
 
+- name: Config fail2ban jail.local
   ansible.builtin.copy:
     dest: /etc/fail2ban/jail.local
     content: |
