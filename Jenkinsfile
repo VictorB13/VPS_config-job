@@ -27,7 +27,7 @@ pipeline {
                         error "You did not provide any input for the server name. ABORTING..."
                     }
 
-                    def rawToken = params.VAULT_PERSONAL_TOKEN.getPlainText()
+                    def rawToken = "${params.VAULT_PERSONAL_TOKEN}"
                     if (rawToken == null || rawToken.trim() == '') {
                         error "No token was provided, permission denied"
                     }
@@ -35,17 +35,27 @@ pipeline {
                     echo "Input Validation Passed. Fetching secrets..."
 
                     def secretsJson = sh(
-                        script: "curl -s -H 'X-Vault-Token: ${rawToken}' ${VAULT_ADDR}/v1/secret/data/Production/servers/${params.SERVER_NAME}",
+                        script: "curl -s -H 'X-Vault-Token: ${rawToken}' ${VAULT_ADDR}/v1/Production/data/servers/${params.SERVER_NAME}",
                         returnStdout: true
                     ).trim()
 
+                    echo "Raw response from Vault: ${secretsJson}"
+
+                    if (secretsJson == null || secretsJson == "" || secretsJson.contains("errors")) {
+                        error "Failed to fetch secrets from Vault. Check if token or server name is correct!"
+                    }
+
                     def props = new groovy.json.JsonSlurper().parseText(secretsJson)
                     
+                    if (props?.data?.data == null) {
+                        error "Structure 'data.data' not found in Vault response. Is the path correct?"
+                    }
+
                     env.SERVER_IP = props.data.data.server_ip
                     env.SERVER_PORT = props.data.data.ssh_port
                     env.SERVER_PASS = props.data.data.server_password
 
-                    echo "Server details pulled from Vault"
+                    echo "Server details pulled successfully from Vault"
                 }
             }
         }
@@ -80,14 +90,14 @@ pipeline {
         stage('Update Vault Port') {
             steps {
                 script {
-                    def rawToken = params.VAULT_PERSONAL_TOKEN.getPlainText()
+                    def rawToken = "${params.VAULT_PERSONAL_TOKEN}"
                     echo "Updating the new port (2222) in Vault..."
                     sh """
                     curl -s -X POST \
                         -H "X-Vault-Token: ${rawToken}" \
                         -H "Content-Type: application/json" \
                         -d '{"data": {"server_ip": "${env.SERVER_IP}", "ssh_port": "2222", "server_password": "${env.SERVER_PASS}"}}' \
-                        ${VAULT_ADDR}/v1/secret/data/Production/servers/${params.SERVER_NAME}
+                        ${VAULT_ADDR}/v1/Production/data/servers/${params.SERVER_NAME}
                     """
                     echo "Vault has been updated"
                 }
