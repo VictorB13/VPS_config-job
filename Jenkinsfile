@@ -94,7 +94,7 @@ pipeline {
             steps {
                 script {
                     def rawToken = "${params.VAULT_PERSONAL_TOKEN}"
-                    echo "Updating the new port (2222) in Vault..."
+                    echo "Updating the new port (22444) in Vault..."
                     sh """
                     curl -s -X POST \
                         -H "X-Vault-Token: ${rawToken}" \
