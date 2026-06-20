@@ -10,6 +10,7 @@ terraform/.terraform.lock.hcl
 terraform.tfvars
 terraform/*.tfstate
 terraform/*.tfstate.backup
+terraform.tfstate
 
 # Hosts file
 ansible/inventory.ini
