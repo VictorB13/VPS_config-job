@@ -73,6 +73,9 @@ pipeline {
         }
 
         stage('Run Ansible Playbook') {
+            environment {
+                ANSIBLE_HOST_KEY_CHECKING = 'False'
+            }
             steps {
                 dir('ansible') {
                     echo "Running the playbook on the server"
