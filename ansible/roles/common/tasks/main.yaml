@@ -30,6 +30,7 @@
       - rsync
       - tar
       - python3
+      - python-pip3
       - fail2ban
       - iptables-persistent
       - ntp
