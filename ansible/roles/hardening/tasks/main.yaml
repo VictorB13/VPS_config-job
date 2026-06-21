@@ -3,12 +3,17 @@
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?Port\s+\d+'
-    line: "Port {{ ssh_port }}"
+    line: "Port 22444"
+
 
 - name: Restart the sshd service to apply the new port config
   ansible.builtin.service:
     name: sshd
     state: restarted
+
+- name: Update ansible_port in memory for the rest of the playbook
+  ansible.builtin.set_fact:
+    ansible_port: 22444
 
 - name: Enable Fail2ban service
   ansible.builtin.service: #enable fail2ban service
@@ -22,7 +27,7 @@
     content: |
       [sshd]
       enabled = true 
-      port = {{ ssh_port }} 
+      port = 22444 
       filter = sshd 
       logpath = /var/log/auth.log 
       maxretry = 5
