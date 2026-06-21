@@ -34,15 +34,6 @@
     name: fail2ban
     state: restarted 
   
-- name: Set Default iptables policies
-  ansible.builtin.iptables:
-    policy: "{{ item.policy }}"
-    chain: "{{ item.chain }}"
-  loop:
-    - { chain: 'INPUT', policy: 'DROP'}
-    - { chain: 'OUTPUT', policy: 'DROP'}
-    - { chain: 'FORWARD', policy: 'ACCEPT'}
-
 - name: Allow loopback (lo) traffic (INPUT)
   ansible.builtin.iptables:
     chain: INPUT
@@ -113,6 +104,15 @@
     chain: POSTROUTING
     source: 10.8.0.0/24
     jump: MASQUERADE
+
+- name: Set Default iptables policies
+  ansible.builtin.iptables:
+    policy: "{{ item.policy }}"
+    chain: "{{ item.chain }}"
+  loop:
+    - { chain: 'INPUT', policy: 'DROP'}
+    - { chain: 'OUTPUT', policy: 'DROP'}
+    - { chain: 'FORWARD', policy: 'ACCEPT'}
 
 # save iptables rules
 - name: Save iptables rules
