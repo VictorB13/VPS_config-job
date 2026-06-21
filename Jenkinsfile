@@ -32,7 +32,7 @@ pipeline {
                     echo "Creating Dynamic inventory file from Jenkins UI parameters..."
                     sh """
                     echo "[Production]" > ansible/hosts
-                    echo "good_VPS ansible_host=${params.SERVER_IP} ansible_port=${SSH_PORT} ansible_user=root ansilbe_password='${SERVER_PASSWORD}'" >> ansible/hosts
+                    echo "good_VPS ansible_host=${params.SERVER_IP} ansible_port=${SSH_PORT} ansible_user=root ansible_password='${SERVER_PASSWORD}'" >> ansible/hosts
                     """
                 }
             }
