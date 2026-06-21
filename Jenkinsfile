@@ -41,6 +41,8 @@ pipeline {
         stage('Run ansible playbook') {
             steps {
                 dir('ansible'){
+                    sh "chmod 600 ansible.cfg" 
+                    sh "ANSIBLE_FORCE_COLOR=true ansible-playbook -i hosts playbook.yaml"
                     echo "Running the playbook on the server..."
                     sh "ansible-playbook -i hosts playbook.yaml"
                 }
