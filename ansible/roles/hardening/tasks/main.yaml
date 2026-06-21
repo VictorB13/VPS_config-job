@@ -66,6 +66,17 @@
     ctstate: ['ESTABLISHED', 'RELATED']
     jump: ACCEPT
 
+- name: Allow established & related connections (OUTPUT)
+  ansible.builtin.iptables:
+    chain: OUTPUT
+    ctstate: ['ESTABLISHED', 'RELATED']
+    jump: ACCEPT
+
+- name: Allow all outbound traffic from server (Temporary for setup)
+  ansible.builtin.iptables:
+    chain: OUTPUT
+    jump: ACCEPT
+
 # allow ssh connection on the new custom port
 - name: Allow SSH connection on the custom port
   ansible.builtin.iptables:
