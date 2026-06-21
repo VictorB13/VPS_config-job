@@ -34,12 +34,86 @@
     name: fail2ban
     state: restarted 
   
-- name: Copy "iptables_setup.sh" script to the Server
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../scripts/iptables_setup.sh" #from where to copy the script
-    dest: /tmp/iptables_setup.sh #where to put the script in the server
-    mode: '0755'
+- name: Set Default iptables policies
+  ansible.builtin.iptables:
+    policy: "{{ item.policy }}"
+    chain: "{{ item.chain }}"
+  loop:
+    - { chain: 'INPUT', policy: 'DROP'}
+    - { chain: 'OUTPUT', policy: 'DROP'}
+    - { chain: 'FORWARD', policy: 'ACCEPT'}
 
-- name: Run "iptables_setup.sh" script
-  ansible.builtin.command: "/tmp/iptables_setup.sh 22444"
-  become: true
+- name: Allow loopback (lo) traffic (INPUT)
+  ansible.builtin.iptables:
+    chain: INPUT
+    in_interface: lo
+    jump: ACCEPT
+
+#allow loopback (for network interface card (NIC))
+- name: Allow loopback (lo) traffic (OUTPUT)
+  ansible.builtin.iptables:
+    chain: OUTPUT
+    out_interface: lo
+    jump: ACCEPT
+
+#allow all localhost traffic
+- name: Allow any incoming traffic destined for localhost subnet
+  ansible.builtin.iptables:
+    chain: INPUT
+    destination: 127.0.0.0/8
+    jump: ACCEPT
+
+#for existing connections (conntrack)
+- name: Allow established & related connections
+  ansible.builtin.iptables:
+    chain: INPUT
+    ctstate: ['ESTABLISHED', 'RELATED']
+    jump: ACCEPT
+
+# allow ssh connection on the new custom port
+- name: Allow SSH connection on the custom port
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "{{ ssh_port }}"
+    jump: ACCEPT
+
+#allow ping (icmp)
+- name: Allow ICMP
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: icmp
+    icmp_type: echo-request
+    jump: ACCEPT
+
+# Allow port 1194 for openVPN  and tun (virtual network interface card)
+- name: Allow OpenVPN traffic on port 1194
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: udp
+    destination_port: "1194"
+    jump: ACCEPT
+
+- name: Allow incoming traffic on tun interface
+  ansible.builtin.iptables:
+    chain: INPUT
+    in_interface: tun+
+    jump: ACCEPT
+
+- name: Forward traffic from tun interface
+  ansible.builtin.iptables:
+    chain: FORWARD
+    in_interface: tun+
+    jump: ACCEPT
+
+# nat (masquerade) for OpenVPN
+- name: Configure NAT masquerade for OpenVPN subnet
+  ansible.builtin.iptables:
+    table: nat
+    chain: POSTROUTING
+    source: 10.8.0.0/24
+    jump: MASQUERADE
+
+# save iptables rules
+- name: Save iptables rules
+  ansible.builtin.shell: iptables-save > /etc/iptables/rules.v4

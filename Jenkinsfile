@@ -1,110 +1,87 @@
 pipeline {
     agent any
 
+    // The fields for the user to fill in the UI
     parameters {
-        string(
-            name: 'SERVER_NAME',
-            defaultValue: '',
-            description: 'Enter the name as written in Vault!!!'
-        )
-
-        password(
-            name: 'VAULT_PERSONAL_TOKEN',
-            defaultValue: '',
-            description: 'Paste your Vault token'
-        )
-    }
-
-    environment {
-        VAULT_ADDR = 'http://vault:8200'
+        string(name: 'SERVER_IP', defaultValue: '', description: 'The IP of the VPS')
+        string(name: 'SSH_PORT', defaultValue: '', description: 'SSH port of the VPS')
+        password(name: 'SERVER_PASSWORD', defaultValue: '', description: 'Password of the VPS') 
     }
 
     stages {
-        stage('Validate INPUT & Fetch Secrets') {
+        stage('Validate Input') {
             steps {
                 script {
-                    if (params.SERVER_NAME == null || params.SERVER_NAME.trim() == '') {
-                        error "You did not provide any input for the server name. ABORTING..."
+                    if (params.SERVER_IP == '' || params.SERVER_PASSWORD == '') {
+                        error: "ERROR: IP or Passeword Cannot be empty!"
                     }
-
-                    def rawToken = "${params.VAULT_PERSONAL_TOKEN}"
-                    if (rawToken == null || rawToken.trim() == '') {
-                        error "No token was provided, permission denied"
-                    }
-
-                    echo "Input Validation Passed. Fetching secrets..."
-
-                    def secretsJson = sh(
-                        script: "curl -s -H 'X-Vault-Token: ${rawToken}' ${VAULT_ADDR}/v1/Production/data/servers/${params.SERVER_NAME}",
-                        returnStdout: true
-                    ).trim()
-
-                    echo "Raw response from Vault: ${secretsJson}"
-
-                    if (secretsJson == null || secretsJson == "" || secretsJson.contains("errors")) {
-                        error "Failed to fetch secrets from Vault. Check if token or server name is correct!"
-                    }
-
-                    def props = new groovy.json.JsonSlurper().parseText(secretsJson)
-                    
-                    if (props?.data?.data == null) {
-                        error "Structure 'data.data' not found in Vault response. Is the path correct?"
-                    }
-
-                    env.SERVER_IP = props.data.data.server_ip
-                    env.SERVER_PORT = props.data.data.ssh_port
-                    env.SERVER_PASS = props.data.data.server_password
-
-                    echo "Server details pulled successfully from Vault"
+                    echo "INPUT Validtion Passed for IP: ${params.SERVER_IP}"
                 }
             }
         }
-
-        stage('Generate Inventory File') {
+        
+        // Generate dynamic inventory.ini file for the VPS parameters
+        stage('Generate Invenroty File') {
             steps {
                 script {
-                    echo "Creating dynamic inventory file for ${params.SERVER_NAME}..."
+                    echo "Creating Dynamic inventory file from Jenkins UI parameters..."
                     sh """
-                    echo "[production]" > ansible/hosts
-                    echo "${params.SERVER_NAME} ansible_host=${env.SERVER_IP} ansible_port=${env.SERVER_PORT} ansible_user=root ansible_password='${env.SERVER_PASS}'" >> ansible/hosts
+                    echo "[Production]" > ansible/hosts
+                    echo "good_VPS ansible_host=${params.SERVER_IP} ansible_port=${SSH_PORT} ansible_user=root ansilbe_password='${SERVER_PASSWORD}'" >> ansible/hosts
                     """
                 }
             }
         }
 
-        stage('Run Ansible Playbook') {
-            environment {
-                ANSIBLE_HOST_KEY_CHECKING = 'False'
-            }
+        stage('Run ansible playbook') {
             steps {
-                dir('ansible') {
-                    echo "Running the playbook on the server"
+                dir('ansible'){
+                    echo "Running the playbook on the server..."
                     sh "ansible-playbook -i hosts playbook.yaml"
-                }
-            }
-            post {
-                always {
-                    echo "Cleaning sensitive files...."
-                    sh "rm -f ansible/hosts"
-                }
-            }
-        }
-
-        stage('Update Vault Port') {
-            steps {
-                script {
-                    def rawToken = "${params.VAULT_PERSONAL_TOKEN}"
-                    echo "Updating the new port (22444) in Vault..."
-                    sh """
-                    curl -s -X POST \
-                        -H "X-Vault-Token: ${rawToken}" \
-                        -H "Content-Type: application/json" \
-                        -d '{"data": {"server_ip": "${env.SERVER_IP}", "ssh_port": "2222", "server_password": "${env.SERVER_PASS}"}}' \
-                        ${VAULT_ADDR}/v1/Production/data/servers/${params.SERVER_NAME}
-                    """
-                    echo "Vault has been updated"
                 }
             }
         }
     }
+
+    post {
+        success {
+            script {
+                echo """
+                ==================================================================
+                🚀🚀🚀 VPS CONFIGURATION COMPLETED SUCCESSFULLY! 🚀🚀🚀
+                ==================================================================
+                
+                Your server is now secure and ready for production use.
+                
+                💻 HOW TO CONNECT VIA SSH:
+                --------------------------
+                ssh root@${params.SERVER_IP} -p 22444
+                (Note: The SSH port has been updated to 22444 for security)
+                
+                🔒 OPENVPN STATUS:
+                ------------------
+                The OpenVPN container is RUNNING, Initialized, and Verified.
+                
+                📄 YOUR OPENVPN CLIENT CERTIFICATE (*.ovpn):
+                --------------------------------------------
+                You can find the full certificate content in the Ansible log above 
+                between 'START_CERTIFICATE_OUTPUT' and 'END_CERTIFICATE_OUTPUT'.
+                Copy that text, save it as 'client.ovpn', and use it in your VPN client!
+                
+                ==================================================================
+                """
+            }
+        }
+
+        failure {
+            echo "Deployment Failed. Please check the Jenkins console output above to investigate the error"
+        }
+
+        always {
+            echo "Cleaning senitive files..."
+            sh "rm -f ansible/hosts"
+        }
+    }
+
+
 }
