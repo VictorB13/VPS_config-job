@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    //painting the jenkins logs
+    options {
+        ansiColor('xterm')
+    }
+
     // The fields for the user to fill in the UI
     parameters {
         string(name: 'SERVER_IP', defaultValue: '', description: 'The IP of the VPS')
