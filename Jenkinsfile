@@ -32,7 +32,7 @@ pipeline {
 
                     //fetching the secrets from Vault with curl command for API
                     def response = sh(
-                        script: "curl -s -H 'X-Vault-Token: ${params.VAULT_TOKEN}' http://vault:8200/v1/production/data/servers/${params.SERVER_NAME}",
+                        script: "curl -s -H 'X-Vault-Token: ${params.VAULT_TOKEN}' http://vault:8200/v1/Production/data/servers/${params.SERVER_NAME}",
                         returnStdout: true
                     ).trim()
 
@@ -40,6 +40,10 @@ pipeline {
                     env.VAULT_IP       = sh(script: "echo '${response}' | jq -r '.data.data.server_ip'",       returnStdout: true).trim()
                     env.VAULT_PASSWORD = sh(script: "echo '${response}' | jq -r '.data.data.server_password'", returnStdout: true).trim()
                     env.VAULT_PORT     = sh(script: "echo '${response}' | jq -r '.data.data.ssh_port'",        returnStdout: true).trim()
+
+                    if (env.VAULT_IP == 'null' || env.VAULT_IP == '') {
+                        error "Failed to fetch secrets from Vault. Check the path and token. Vault response: ${response}"
+                    }
 
                     echo "Successfully fetched secrets for IP: ${env.VAULT_IP}"
                 }
