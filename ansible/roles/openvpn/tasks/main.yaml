@@ -26,9 +26,8 @@
   retries: 5
   delay: 2
 
-
 - name: Initialize OpenVPN configuration inside the container
-  ansible.builtin.command: docker exec openvpn ovpn_genconfig -u udp://{{ anible_host }}:1194
+  ansible.builtin.command: docker exec openvpn ovpn_genconfig -u udp://{{ ansible_host }}:1194
   args:
     creates: /etc/openvpn_data/openvpn.conf
 
@@ -43,14 +42,17 @@
   args:
     creates: /etc/openvpn_data/client.ovpn
 
-- name: save client config file on host
+- name: Check if client config file already exists on host
+  ansible.builtin.stat:
+    path: /etc/openvpn_data/client.ovpn
+  register: vpn_cert_file
+
+- name: Save client config file on host
   ansible.builtin.copy:
     content: "{{ client_cfg.stdout }}"
     dest: /etc/openvpn_data/client.ovpn
     mode: '0600'
   when: client_cfg.changed or not vpn_cert_file.stat.exists
-  vars:
-    vpn_cert_file: "{{ lookup('ansible.builtin.stat', path='/etc/openvpn_data/client.ovpn') }}"
 
 - name: Fetch OpenVPN client certificate content
   ansible.builtin.slurp:
