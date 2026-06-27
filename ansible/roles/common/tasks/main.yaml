@@ -81,6 +81,19 @@
     state: stopped
     enabled: no
 
+- name: Remove systemd-resolved stub resolv.conf symlink
+  ansible.builtin.file:
+    path: /etc/resolv.conf
+    state: absent
+
+- name: Write static resolv.conf so DNS works after systemd-resolved is gone
+  ansible.builtin.copy:
+    dest: /etc/resolv.conf
+    content: |
+      nameserver 8.8.8.8
+      nameserver 1.1.1.1
+    mode: '0644'
+
 - name: Configure dnsmasq service
   ansible.builtin.copy:
     dest: /etc/dnsmasq.conf
@@ -92,8 +105,8 @@
       server=1.1.1.1
 
       cache-size=1000
-      bind-interfaces
-    
+      bind-dynamic
+
     mode: '0644'
 
 - name: Restart dnsmasq service
