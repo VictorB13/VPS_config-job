@@ -75,9 +75,9 @@
     state: started
     enabled: yes
 
-- name: Stop and disable systemd-resolver (to free up port 53)
+- name: Stop and disable systemd-resolved (to free up port 53)
   ansible.builtin.service:
-    name: systemd-resolver
+    name: systemd-resolved
     state: stopped
     enabled: no
 
