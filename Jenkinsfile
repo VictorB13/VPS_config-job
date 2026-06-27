@@ -28,20 +28,20 @@ pipeline {
         stage('Fetch VPS secrets from VAULT'){
             steps{
                 script{
-                    echo "Fetching VPS secrets from Vault"
-                    //fetching the secrets
-                    withVault(vaultUrl: 'http://vault:8200', vaultToken: "${params.VAULT_TOKEN}", engineVersion: 2){
-                        withVaultSecrets([
-                            [$class: 'VaultSecretMapping', requestVariable: 'SERVER_IP', secretValue: 'Production/data/servers/digitalOcean_1:server_ip'],
-                            [$class: 'VaultSecretMapping', requestVariable: 'SERVER_PASSWORD', secretValue: 'Production/data/servers/digitalOcean_1:server_password'],
-                            [$class: 'VaultSecretMapping', requestVariable: 'SSH_PORT', secretValue: 'Production/data/servers/digitalOcean_1:ssh_port']
-                        ]){
-                            env.VAULT_IP = "${SERVER_IP}"
-                            env.VAULT_PASSWORD = "${SERVER_PASSWORD}"
-                            env.VAULT_PORT = "${SSH_PORT}"
-                        }
-                    }
-                    echo "Successfully fetched secrets for IP: ${env.VAULT_IP}"
+                    echo "Fetching VPS secrets from Vault via API"
+
+                    //fetching the secrets from Vault with curl command for API
+                    def response = sh(
+                        script: "curl -s -H 'X-Vault-Token: ${params.VAULT_TOKEN}' http://vault:8200/v1/production/data/servers/${params.SERVER_NAME}",
+                        returnStdout: true
+                    ).trim()
+
+                    def json = readJSON text: response //parse the JSON file we got from the API call
+
+                    //read the secrets of the VPS from the json file and save into env variables
+                    env.VAULT_IP = json.data.data.server_ip
+                    env.VAULT_PASSWORD = json.data.data.server_password
+                    env.VAULT_PORT = json.data.data.ssh_port
                 }
             }
         }   
