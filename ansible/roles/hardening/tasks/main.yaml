@@ -1,20 +1,4 @@
 ---
-- name: Change the default SSH port in sshd_config
-  ansible.builtin.lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '^#?Port\s+\d+'
-    line: "Port 22444"
-
-
-- name: Restart the sshd service to apply the new port config
-  ansible.builtin.service:
-    name: sshd
-    state: restarted
-
-- name: Update ansible_port in memory for the rest of the playbook
-  ansible.builtin.set_fact:
-    ansible_port: 22444
-
 - name: Enable Fail2ban service
   ansible.builtin.service: #enable fail2ban service
     name: fail2ban
@@ -27,7 +11,7 @@
     content: |
       [sshd]
       enabled = true 
-      port = 22444 
+      port = 22 
       filter = sshd 
       logpath = /var/log/auth.log 
       maxretry = 5
@@ -72,17 +56,12 @@
     ctstate: ['ESTABLISHED', 'RELATED']
     jump: ACCEPT
 
-- name: Allow all outbound traffic from server (Temporary for setup)
-  ansible.builtin.iptables:
-    chain: OUTPUT
-    jump: ACCEPT
-
-# allow ssh connection on the new custom port
+# allow ssh connection on the defaulf port
 - name: Allow SSH connection on the custom port
   ansible.builtin.iptables:
     chain: INPUT
     protocol: tcp
-    destination_port: "{{ ssh_port }}"
+    destination_port: "22"
     jump: ACCEPT
 
 #allow ping (icmp)
@@ -91,6 +70,21 @@
     chain: INPUT
     protocol: icmp
     icmp_type: echo-request
+    jump: ACCEPT
+
+#Allow DNS UDP+TCP (port 53)
+- name: Allow DNS queries (UDP port 53)
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: udp
+    destination_port: "53"
+    jump: ACCEPT
+
+- name: Allow DNS querires (TCP port 53)
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "53"
     jump: ACCEPT
 
 # Allow port 1194 for openVPN  and tun (virtual network interface card)
@@ -127,7 +121,7 @@
     chain: "{{ item.chain }}"
   loop:
     - { chain: 'INPUT', policy: 'DROP'}
-    - { chain: 'OUTPUT', policy: 'DROP'}
+    - { chain: 'OUTPUT', policy: 'ACCEPT'}
     - { chain: 'FORWARD', policy: 'ACCEPT'}
 
 # save iptables rules
