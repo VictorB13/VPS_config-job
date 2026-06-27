@@ -18,18 +18,24 @@
     capabilities:
       - NET_ADMIN 
 
-- name: Wait for OpenVPN container to be running
+- name: Wait for OpenVPN container to be running and stable
   community.docker.docker_container_info:
     name: openvpn
   register: container_status
-  until: container_status.container.State.Running == true
-  retries: 5
-  delay: 2
+  until: >
+    container_status.container.State.Running == true and
+    container_status.container.State.Restarting == false
+  retries: 15
+  delay: 5
 
 - name: Initialize OpenVPN configuration inside the container
   ansible.builtin.command: docker exec openvpn ovpn_genconfig -u udp://{{ ansible_host }}:1194
   args:
     creates: /etc/openvpn_data/openvpn.conf
+  register: genconfig_result
+  retries: 5
+  delay: 5
+  until: genconfig_result is not failed
 
 - name: Initialize PKI CA
   ansible.builtin.command: docker exec -e EASYRSA_BATCH=1 openvpn ovpn_initpki nopass
