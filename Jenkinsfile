@@ -36,12 +36,12 @@ pipeline {
                         returnStdout: true
                     ).trim()
 
-                    def json = readJSON text: response //parse the JSON file we got from the API call
+                    // parse the JSON response using jq (no plugin needed)
+                    env.VAULT_IP       = sh(script: "echo '${response}' | jq -r '.data.data.server_ip'",       returnStdout: true).trim()
+                    env.VAULT_PASSWORD = sh(script: "echo '${response}' | jq -r '.data.data.server_password'", returnStdout: true).trim()
+                    env.VAULT_PORT     = sh(script: "echo '${response}' | jq -r '.data.data.ssh_port'",        returnStdout: true).trim()
 
-                    //read the secrets of the VPS from the json file and save into env variables
-                    env.VAULT_IP = json.data.data.server_ip
-                    env.VAULT_PASSWORD = json.data.data.server_password
-                    env.VAULT_PORT = json.data.data.ssh_port
+                    echo "Successfully fetched secrets for IP: ${env.VAULT_IP}"
                 }
             }
         }   
